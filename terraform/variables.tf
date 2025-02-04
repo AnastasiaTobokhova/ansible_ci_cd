@@ -18,3 +18,8 @@ variable "yc_compute_default_zone" {
   type        = string
   default     = "ru-central1-a"
 }
+
+variable "ssh_public_key" {
+  description = "SSH public key for the VM"
+  type        = string
+}
