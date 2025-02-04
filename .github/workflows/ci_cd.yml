@@ -44,6 +44,12 @@ jobs:
     needs: terraform
     runs-on: ubuntu-latest
     steps:
+      - name: Clean known_hosts entry
+        run: |
+         ssh-keygen -R $(terraform output -raw vm_public_ip)
+        
+      - name: Disable SSH host key checking
+        run: echo "export ANSIBLE_HOST_KEY_CHECKING=False" >> $GITHUB_ENV
       # Шаг 6: Клонирование репозитория
       - name: Checkout code
         uses: actions/checkout@v3
