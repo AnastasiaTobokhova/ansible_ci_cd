@@ -58,8 +58,9 @@ jobs:
 
         - name: Clean known_hosts entry
           run: |
-           if [ -d "$(pwd)/terraform" ]; then 
-             ssh-keygen -R "$(terraform -chdir=terraform output -raw vm_public_ip)"
+           if [ -d "./terraform" ]; then 
+             VM_IP=$(terraform -chdir=terraform output -raw vm_public_ip)
+             ssh-keygen -R "$VM_IP"
            else 
              echo "Directory 'terraform' does not exist"; 
              exit 1; 
