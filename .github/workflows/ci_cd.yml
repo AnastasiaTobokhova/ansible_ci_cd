@@ -24,20 +24,20 @@ jobs:
 
     # Initialize Terraform
     - name: Initialize Terraform
-      run: terraform init terraform/
+      run: terraform -chdir=terraform init
 
     # Terraform Plan
     - name: Terraform Plan
-      run: terraform plan -var-file=terraform/variables.tf terraform/
+      run: terraform -chdir=terraform plan -var-file=variables.tf
 
     # Terraform Apply
     - name: Terraform Apply
-      run: terraform apply -auto-approve -var-file=terraform/variables.tf terraform/
+      run: terraform -chdir=terraform apply -auto-approve -var-file=variables.tf
 
     # Remove known_hosts entry for the server
     - name: Clean known_hosts entry
       run: |
-        ssh-keygen -R $(terraform output -raw vm_public_ip)
+        ssh-keygen -R $(terraform -chdir=terraform output -raw vm_public_ip)
 
     # Disable host key checking
     - name: Disable SSH host key checking
