@@ -1,6 +1,5 @@
 name: CI/CD for Terraform and Ansible
 
-
 on:
   push:
     branches:
@@ -53,6 +52,7 @@ jobs:
 
         - name: Clean known_hosts entry
           run: |
+            ls -al
             if [ -d "./terraform" ]; then
              VM_IP=$(terraform -chdir=terraform output -raw vm_public_ip)
              if [ -n "$VM_IP" ]; then
