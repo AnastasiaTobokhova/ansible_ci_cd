@@ -1,63 +1,58 @@
 name: CI/CD for Terraform and Ansible
 
-
 on:
   push:
     branches:
       - main
 
 jobs:
-  terraform:
-    name: Terraform Plan & Apply
+  terraform-ansible:
+    name: Terraform Plan & Apply and Ansible
     runs-on: ubuntu-latest
+
     steps:
-      # Шаг 1: Клонирование репозитория
-      - name: Checkout code
-        uses: actions/checkout@v3
+    # Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      # Шаг 2: Установка Terraform
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.5.0
+    # Set up Terraform
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_wrapper: false
+        cli_config_credentials_token: ${{ secrets.YC_TOKEN }}
 
-      # Шаг 3: Переход в папку terraform
-      - name: Change directory to terraform
-        working-directory: ./terraform
-        run: terraform init
+    # Initialize Terraform
+    - name: Initialize Terraform
+      run: terraform init terraform/
 
-      # Шаг 4: Планирование Terraform
-      - name: Terraform Plan
-        env:
-          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-        working-directory: ./terraform
-        run: terraform plan
+    # Terraform Plan
+    - name: Terraform Plan
+      run: terraform plan -var-file=terraform/variables.tf terraform/
 
-      # Шаг 5: Применение Terraform
-      - name: Terraform Apply
-        env:
-          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-        working-directory: ./terraform
-        run: terraform apply -auto-approve
+    # Terraform Apply
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -var-file=terraform/variables.tf terraform/
 
-  ansible:
-    name: Ansible Playbook
-    needs: terraform
-    runs-on: ubuntu-latest
-    steps:
-      # Шаг 6: Клонирование репозитория
-      - name: Checkout code
-        uses: actions/checkout@v3
+    # Remove known_hosts entry for the server
+    - name: Clean known_hosts entry
+      run: |
+        ssh-keygen -R $(terraform output -raw vm_public_ip)
 
-      # Шаг 7: Установка Ansible
-      - name: Install Ansible
-        run: |
-          sudo apt update
-          sudo apt install -y ansible
+    # Disable host key checking
+    - name: Disable SSH host key checking
+      run: echo "export ANSIBLE_HOST_KEY_CHECKING=False" >> $GITHUB_ENV
 
-      # Шаг 8: Выполнение Ansible Playbook
-      - name: Run Ansible Playbook
-        run: |
-          ansible-playbook ansible/playbook.yml -i ansible/inventory.ini
+    # Install Ansible
+    - name: Install Ansible
+      run: |
+        sudo apt update
+        sudo apt install -y ansible
+
+    # Run Ansible playbook
+    - name: Run Ansible Playbook
+      run: |
+        ansible-playbook ansible/playbook.yml -i ansible/inventory.ini
+
 
 
