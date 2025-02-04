@@ -1,0 +1,19 @@
+- name: Настройка веб-сервера
+  hosts: web_servers
+  become: true
+
+  tasks:
+    - name: Обновить кэш пакетов
+      apt:
+        update_cache: yes
+
+    - name: Установить Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Убедиться, что Nginx запущен
+      service:
+        name: nginx
+        state: started
+        enabled: true

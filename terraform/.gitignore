@@ -1,0 +1,55 @@
+# Ignore state files
+*.tfstate
+*.tfstate.*
+
+# Ignore crash logs
+crash.log
+
+# Ignore Terraform variables
+*.tfvars
+*.tfvars.json
+
+# Ignore Terraform backups
+*.backup
+*.tfbackup
+
+# Ignore Terraform lock file
+.terraform.lock.hcl
+
+# Ignore Terraform modules and plugins
+.terraform/
+
+# Ignore IDE files
+.idea/
+*.iml
+.vscode/
+*.code-workspace
+*.sublime-workspace
+*.sublime-project
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+# Игнорирование всех системных и ненужных файлов
+.bash_history
+.bash_logout
+.bashrc
+.cache/
+.config/
+.dotnet/
+.gitconfig
+.lesshst
+.local/
+.pki/
+.profile
+.ssh/
+.sudo_as_admin_successful
+.terraform.d/
+.vscode/
+.wget-hsts
+apt
+packages.microsoft.gpg
+snap/
+sudo
+update
+yandex-cloud/
