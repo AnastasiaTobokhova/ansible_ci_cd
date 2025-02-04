@@ -58,13 +58,16 @@ jobs:
 
         - name: Clean known_hosts entry
           run: |
-           if [ -d "./terraform" ]; then 
-             VM_IP=$(terraform -chdir=terraform output -raw vm_public_ip)
-             ssh-keygen -R "$VM_IP"
-           else 
-             echo "Directory 'terraform' does not exist"; 
-             exit 1; 
-           fi
+            if [ -d "./terraform" ]; then 
+              VM_IP=$(terraform -chdir=terraform output -raw vm_public_ip)
+              mkdir -p ~/.ssh
+              touch ~/.ssh/known_hosts
+              ssh-keygen -R "$VM_IP"
+            else
+              echo "Directory 'terraform' does not exist"
+              exit 1
+            fi
+
 
         - name: Disable SSH host key checking
           run: echo "export ANSIBLE_HOST_KEY_CHECKING=False" >> $GITHUB_ENV
