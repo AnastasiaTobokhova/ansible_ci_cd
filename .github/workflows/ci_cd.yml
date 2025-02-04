@@ -86,7 +86,15 @@ jobs:
             mkdir -p ~/.ssh
             echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
             chmod 600 ~/.ssh/config
-      
+            
+        - name: Configure SSH for Ansible
+          run: |
+           mkdir -p ~/.ssh
+           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+           chmod 600 ~/.ssh/id_ed25519
+           ssh-keyscan -H 89.169.128.31 >> ~/.ssh/known_hosts
+          shell: bash
+
       # Шаг 8: Выполнение Ansible Playbook
         - name: Run Ansible Playbook
           run: |
