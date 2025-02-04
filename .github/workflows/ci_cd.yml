@@ -1,6 +1,5 @@
 name: CI/CD for Terraform and Ansible
 
-
 on:
   push:
     branches:
