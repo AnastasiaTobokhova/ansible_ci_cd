@@ -51,11 +51,6 @@ jobs:
             sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
             sudo apt-get update && sudo apt-get install terraform
 
-        - name: List repository structure
-          run: |
-            ls -al $(pwd)
-            ls -al $(pwd)/terraform
-
         - name: Clean known_hosts entry
           run: |
            if [ -d "$(pwd)/terraform" ]; then 
