@@ -80,7 +80,13 @@ jobs:
           run: |
            sudo apt update
            sudo apt install -y ansible
-
+           
+        - name: Disable SSH host key checking
+          run: |
+            mkdir -p ~/.ssh
+            echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+            chmod 600 ~/.ssh/config
+      
       # Шаг 8: Выполнение Ansible Playbook
         - name: Run Ansible Playbook
           run: |
