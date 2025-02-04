@@ -39,6 +39,10 @@ jobs:
         working-directory: ./terraform
         run: terraform apply -auto-approve
 
+      - name: Get VM Public IP
+        id: get_ip
+        run: echo "VM_IP=$(terraform -chdir=terraform output -raw vm_public_ip)" >> $GITHUB_ENV 
+ 
   ansible:
     name: Ansible Playbook
     needs: terraform
@@ -80,6 +84,9 @@ jobs:
           run: |
            sudo apt update
            sudo apt install -y ansible
+
+        - name: Update Ansible Inventory
+          run: echo "[webserver]\n${{ env.VM_IP }} ansible_user=anastasiatobohova ansible_ssh_private_key_file=~/.ssh/id_ed25519" > ansible/inventory.ini
            
         - name: Disable SSH host key checking
           run: |
