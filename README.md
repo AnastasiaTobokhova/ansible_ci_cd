@@ -27,7 +27,14 @@
 - **Bash** – для написания скриптов автоматизации.
 
 ## Структура репозитория
-. ├── ansible │   ├── playbook.yml # Ansible Playbook для конфигурации сервера │   └── inventory.ini # Инвентарь Ansible (генерируется автоматически) ├── terraform │   ├── main.tf # Основная конфигурация Terraform │   ├── variables.tf # Переменные Terraform │   └── outputs.tf # Вывод значений (например, публичный IP) ├── .github │   └── workflows │   └── ci_cd.yml # GitHub Actions pipeline для автоматизации ├── Dockerfile # Dockerfile для сборки контейнера (если требуется) └── README.md # Документация проекта (этот файл)
+
+ansible_ci_cd/
+├── .github/
+│   └── workflows/
+├── ansible/
+├── terraform/
+├── .gitlab-ci.yml
+└── README.md
 
 ## Предварительные требования
 
