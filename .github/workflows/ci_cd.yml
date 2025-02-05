@@ -9,6 +9,8 @@ jobs:
   terraform:
     name: Terraform Plan & Apply
     runs-on: ubuntu-latest
+    outputs:
+      vm_ip: ${{ steps.get_ip.outputs.vm_ip }}
     steps:
       # Шаг 1: Клонирование репозитория
       - name: Checkout code
@@ -46,17 +48,18 @@ jobs:
         run: |
           RAW_OUTPUT=$(terraform output -raw vm_public_ip)
           echo "Raw output: $RAW_OUTPUT"
-          # Извлекаем первый совпадающий IP-адрес и очищаем пробелы/новые строки
+          # Извлекаем первый совпадающий IP-адрес, очищаем пробелы/новые строки
           VM_IP=$(echo "$RAW_OUTPUT" | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1 | xargs)
           if [[ ! $VM_IP =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
             echo "Error: Invalid IP format - $VM_IP"
             exit 1
           fi
-          echo "VM_IP=$VM_IP" >> $GITHUB_ENV
+          # Записываем IP как output для задачи terraform
+          echo "vm_ip=$VM_IP" >> $GITHUB_OUTPUT
 
       # Шаг 7: Отладка IP
       - name: Debug VM IP
-        run: echo "VM IP:${{ env.VM_IP }}"
+        run: echo "VM IP: ${{ steps.get_ip.outputs.vm_ip }}"
 
   ansible:
     name: Ansible Playbook
@@ -79,13 +82,13 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ env.VM_IP }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ needs.terraform.outputs.vm_ip }} >> ~/.ssh/known_hosts
 
       # Шаг 4: Обновление инвентаря Ansible
       - name: Update Ansible Inventory
         run: |
           echo "[webserver]" > ansible/inventory.ini
-          echo "${{ env.VM_IP }} ansible_user=anastasiatobohova ansible_ssh_private_key_file=~/.ssh/id_ed25519" >> ansible/inventory.ini
+          echo "${{ needs.terraform.outputs.vm_ip }} ansible_user=anastasiatobohova ansible_ssh_private_key_file=~/.ssh/id_ed25519" >> ansible/inventory.ini
 
       # Шаг 5: Отключение проверки ключей SSH
       - name: Disable SSH Host Key Checking
@@ -94,6 +97,7 @@ jobs:
       # Шаг 6: Выполнение Ansible Playbook
       - name: Run Ansible Playbook
         run: ansible-playbook ansible/playbook.yml -i ansible/inventory.ini
+
 
 
 
