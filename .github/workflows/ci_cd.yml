@@ -55,7 +55,7 @@ jobs:
 
       # Шаг 7: Отладка IP
       - name: Debug VM IP
-        run: echo "VM IP: ${{ env.VM_IP }}"
+        run: echo "VM IP:${{ env.VM_IP }}"
 
   ansible:
     name: Ansible Playbook
@@ -93,6 +93,7 @@ jobs:
       # Шаг 6: Выполнение Ansible Playbook
       - name: Run Ansible Playbook
         run: ansible-playbook ansible/playbook.yml -i ansible/inventory.ini
+
 
 
 
