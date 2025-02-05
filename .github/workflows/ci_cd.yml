@@ -42,16 +42,22 @@ jobs:
       - name: Get VM Public IP
         id: get_ip
         run: |
-         VM_IP=$(terraform -chdir=terraform output -raw vm_public_ip | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}')
-         echo "VM_IP=$VM_IP" >> $GITHUB_ENV
+         VM_IP=$(terraform -chdir=terraform output -raw vm_public_ip)
+         if [[ $VM_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+           echo "VM_IP=$VM_IP" >> $GITHUB_ENV
+         else
+           echo "Error: Invalid IP format '$VM_IP'"
+           exit 1
+         fi
 
       - name: Debug VM IP
-        run: echo "VM IP is ${{ env.VM_IP }}"
+        run: echo "VM IP:${{ env.VM_IP }}"
 
-      - name: Debug Output
+      - name: Clean known_hosts entry
         run: |
-         VM_IP=$(terraform -chdir=terraform output -raw vm_public_ip | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}')
-         echo "Extracted IP: $VM_IP"
+         ssh-keygen -R ${{ env.VM_IP }} || true
+         ssh-keyscan -H ${{ env.VM_IP }} >> ~/.ssh/known_hosts
+
 
  
   ansible:
