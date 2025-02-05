@@ -59,7 +59,7 @@ jobs:
 
       # Шаг 7: Отладка IP
       - name: Debug VM IP
-        run: echo "VM IP: ${{ steps.get_ip.outputs.vm_ip }}"
+        run: echo "VM IP:${{ steps.get_ip.outputs.vm_ip }}"
 
   ansible:
     name: Ansible Playbook
