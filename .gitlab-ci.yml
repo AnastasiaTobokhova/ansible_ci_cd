@@ -1,0 +1,145 @@
+stages:
+  - lint
+  - test
+  - deploy
+  - notifications
+
+variables:
+  TF_VERSION: "1.5.0"
+  DOCKER_IMAGE_NAME: "myapp"  # Название образа; можно изменить по необходимости
+
+# ========================
+# Stage: Lint
+# ========================
+
+terraform_lint:
+  stage: lint
+  image: hashicorp/terraform:${TF_VERSION}
+  tags:
+    - self-hosted
+  script:
+    - cd terraform
+    - echo "Проверка форматирования Terraform..."
+    - terraform fmt -check
+    - echo "Проверка валидности Terraform-конфигурации..."
+    - terraform validate
+
+ansible_lint:
+  stage: lint
+  image: python:3.9
+  tags:
+    - self-hosted
+  script:
+    - pip install ansible-lint
+    - echo "Запуск ansible-lint для playbook..."
+    - ansible-lint ansible/playbook.yml
+
+# ========================
+# Stage: Test
+# ========================
+
+terraform_plan:
+  stage: test
+  image: hashicorp/terraform:${TF_VERSION}
+  tags:
+    - self-hosted
+  script:
+    - cd terraform
+    - terraform init
+    - echo "Выполнение terraform plan..."
+    - terraform plan -out=tfplan
+
+ansible_syntax:
+  stage: test
+  image: python:3.9
+  tags:
+    - self-hosted
+  script:
+    - apt-get update && apt-get install -y ansible
+    - echo "Проверка синтаксиса Ansible playbook..."
+    - ansible-playbook --syntax-check ansible/playbook.yml
+
+# ========================
+# Stage: Deploy
+# ========================
+
+# 1. Provisioning инфраструктуры через Terraform
+terraform_deploy:
+  stage: deploy
+  image: hashicorp/terraform:${TF_VERSION}
+  tags:
+    - self-hosted
+  script:
+    - cd terraform
+    - terraform init
+    - echo "Применение Terraform для создания инфраструктуры..."
+    - terraform apply -auto-approve
+    # Извлекаем IP-адрес созданной виртуальной машины и сохраняем его во внешний файл
+    - terraform output -raw vm_public_ip > ../vm_ip.txt
+  artifacts:
+    paths:
+      - vm_ip.txt
+    expire_in: 1 hour
+
+# 2. Конфигурация сервера с помощью Ansible
+ansible_deploy:
+  stage: deploy
+  image: python:3.9
+  tags:
+    - self-hosted
+  dependencies:
+    - terraform_deploy
+  script:
+    - apt-get update && apt-get install -y ansible openssh-client
+    # Читаем IP-адрес из файла, созданного предыдущим заданием
+    - export VM_IP=$(cat vm_ip.txt)
+    - echo "Запуск деплоя на сервер с IP: $VM_IP"
+    # Настраиваем SSH
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+    - ssh-keyscan -H $VM_IP >> ~/.ssh/known_hosts
+    # Обновляем инвентарь Ansible
+    - echo "[webserver]" > ansible/inventory.ini
+    - echo "$VM_IP ansible_user=anastasiatobohova ansible_ssh_private_key_file=~/.ssh/id_ed25519" >> ansible/inventory.ini
+    # Запускаем Ansible Playbook для настройки сервера
+    - ansible-playbook ansible/playbook.yml -i ansible/inventory.ini
+
+# 3. Docker контейнеризация: сборка, логин и тестовый запуск образа
+docker_build:
+  stage: deploy
+  image: docker:latest
+  services:
+    - docker:dind
+  tags:
+    - self-hosted
+  script:
+    - echo "Проверка информации о Docker..."
+    - docker info
+    # Выполняем вход в Docker Registry с использованием секретов
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - echo "Сборка Docker образа..."
+    - docker build -t ${DOCKER_IMAGE_NAME}:${CI_COMMIT_SHA} .
+    - echo "Запуск контейнера для проверки..."
+    - docker run --rm ${DOCKER_IMAGE_NAME}:${CI_COMMIT_SHA} echo "Контейнер успешно запущен"
+  only:
+    - main
+
+# ========================
+# Stage: Notifications
+# ========================
+
+notify:
+  stage: notifications
+  image: alpine:latest
+  tags:
+    - self-hosted
+  script:
+    - echo "Успешное завершение пайплайна. Отправка уведомления через Telegram..."
+    # Формируем сообщение для уведомления
+    - MESSAGE="Deployment successful for commit ${CI_COMMIT_SHA}"
+    # Отправка сообщения через Telegram Bot API
+    - >
+      curl -s -X GET "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=$(echo $MESSAGE | sed 's/ /%20/g')"
+  when: on_success
+
